@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:contacts_service/contacts_service.dart';
 
 void main() {
   runApp(MaterialApp(home: TrenbeApp()));
@@ -21,10 +23,39 @@ class _TrenbeAppState extends State<TrenbeApp> {
     });
   }
 
+  getPermission() async {
+    var status = await Permission.contacts.status;
+    if (status.isGranted) {
+      print('허락됨');
+      var contacts = await ContactsService.getContacts();
+      
+    } else if (status.isDenied) {
+      print("거절됨");
+      Permission.contacts.request();
+      openAppSettings();
+    }
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getPermission();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: Text("연락처"),
+        actions: [
+          IconButton(
+              onPressed: () {
+                getPermission();
+              },
+              icon: Icon(Icons.contacts))
+        ],
+      ),
       floatingActionButton: Builder(
         builder: (context_sub) {
           return FloatingActionButton(
