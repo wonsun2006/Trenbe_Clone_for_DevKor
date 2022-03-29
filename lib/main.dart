@@ -43,7 +43,6 @@ class _TrenbeAppState extends State<TrenbeApp> {
         preferredSize: const Size.fromHeight(50),
         child: MainAppBar(),
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.white,
         child: Icon(
@@ -55,20 +54,7 @@ class _TrenbeAppState extends State<TrenbeApp> {
           _mainBodyState.currentState?.scrollToTop();
         },
       ),
-
-      body: SingleChildScrollView(child: MainBody(key: _mainBodyState)),
-      // ListView.builder(
-      //     itemCount: 3,
-      //     itemBuilder: (c, i) {
-      //       return ListTile(
-      //         leading: Text("head"),
-      //         title: Text(name[i]),
-      //         trailing: TextButton(
-      //           child: Text("버튼"),
-      //           onPressed: () {},
-      //         ),
-      //       );
-      //     }),
+      body: MainBody(key: _mainBodyState),
       bottomNavigationBar: MainBottomAppBar(),
     );
   }
@@ -86,7 +72,7 @@ class MainAppBar extends StatelessWidget {
       title: Container(
           padding: EdgeInsets.only(left: 15),
           child: Image.asset(
-            "title_text.png",
+            "assets/title_text.png",
             scale: 1.5,
           )),
       actions: [
@@ -119,16 +105,16 @@ class MainBody extends StatefulWidget {
 class _MainBodyState extends State<MainBody> {
   final _controller = ScrollController();
   final image_list = [
-    "menu_items/menu_item_1.png",
-    "menu_items/menu_item_2.png",
-    "menu_items/menu_item_3.png",
-    "menu_items/menu_item_4.png",
-    "menu_items/menu_item_5.png",
-    "menu_items/menu_item_6.png",
-    "menu_items/menu_item_7.png",
-    "menu_items/menu_item_8.png",
-    "menu_items/menu_item_9.png",
-    "menu_items/menu_item_10.png"
+    "assets/menu_items/menu_item_1.png",
+    "assets/menu_items/menu_item_2.png",
+    "assets/menu_items/menu_item_3.png",
+    "assets/menu_items/menu_item_4.png",
+    "assets/menu_items/menu_item_5.png",
+    "assets/menu_items/menu_item_6.png",
+    "assets/menu_items/menu_item_7.png",
+    "assets/menu_items/menu_item_8.png",
+    "assets/menu_items/menu_item_9.png",
+    "assets/menu_items/menu_item_10.png"
   ];
   final title_list = [
     "여성",
@@ -329,7 +315,7 @@ class _MainCarouselSliderState extends State<MainCarouselSlider> {
                 decoration: BoxDecoration(color: Colors.amber),
                 child: Container(
                   child: Image.asset(
-                    "carousel_item_" + i.toString() + ".png",
+                    "assets/carousel_item_" + i.toString() + ".png",
                     fit: BoxFit.cover,
                   ),
                 ));
