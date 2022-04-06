@@ -1,22 +1,29 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter/rendering.dart';
 
 void main() {
   runApp(MaterialApp(home: TrenbeApp(), debugShowCheckedModeBanner: false));
 }
 
 class TrenbeApp extends StatefulWidget {
-  const TrenbeApp({Key? key}) : super(key: key);
+  TrenbeApp({Key? key}) : super(key: key);
+  var isNavBarHidden;
 
   @override
   State<TrenbeApp> createState() => _TrenbeAppState();
 }
 
 class _TrenbeAppState extends State<TrenbeApp> {
-  final _controller = ScrollController();
   final GlobalKey<_MainBodyState> _mainBodyState = GlobalKey<_MainBodyState>();
+  final GlobalKey<_MainBottomAppBarState> _mainNavBarState =
+      GlobalKey<_MainBottomAppBarState>();
 
   getPermission() async {
     var status = await Permission.contacts.status;
@@ -30,10 +37,17 @@ class _TrenbeAppState extends State<TrenbeApp> {
     }
   }
 
+  setIsNavBarHidden(TF) {
+    setState(() {
+      widget.isNavBarHidden = TF;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
     getPermission();
+    widget.isNavBarHidden = false;
   }
 
   @override
@@ -54,8 +68,10 @@ class _TrenbeAppState extends State<TrenbeApp> {
           _mainBodyState.currentState?.scrollToTop();
         },
       ),
-      body: MainBody(key: _mainBodyState),
-      bottomNavigationBar: MainBottomAppBar(),
+      body: MainBody(
+          key: _mainBodyState, hide_navbar_function: setIsNavBarHidden),
+      bottomNavigationBar: MainBottomAppBar(
+          key: _mainNavBarState, isNavBarHidden: widget.isNavBarHidden),
     );
   }
 }
@@ -96,13 +112,15 @@ class MainAppBar extends StatelessWidget {
 }
 
 class MainBody extends StatefulWidget {
-  MainBody({Key? key}) : super(key: key);
+  MainBody({Key? key, this.hide_navbar_function}) : super(key: key);
+  var hide_navbar_function;
 
   @override
   State<MainBody> createState() => _MainBodyState();
 }
 
 class _MainBodyState extends State<MainBody> {
+  var data;
   final _controller = ScrollController();
   final image_list = [
     "assets/menu_items/menu_item_1.png",
@@ -135,6 +153,49 @@ class _MainBodyState extends State<MainBody> {
     });
   }
 
+  getData() async {
+    var result = await http
+        .get(Uri.parse('https://codingapple1.github.io/app/data.json'));
+    // if (result.statusCode == 200) {
+    // } else {}
+    var result2 = jsonDecode(result.body);
+    setState(() {
+      data = result2;
+    });
+  }
+
+  getAdditionalData() async {
+    sleep(const Duration(seconds: 1));
+    var result = await http
+        .get(Uri.parse('https://codingapple1.github.io/app/more1.json'));
+    // if (result.statusCode == 200) {
+    // } else {}
+    var result2 = jsonDecode(result.body);
+    setState(() {
+      data = [...data, result2];
+    });
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getData();
+
+    _controller.addListener(() {
+      if (_controller.position.pixels == _controller.position.maxScrollExtent) {
+        getAdditionalData();
+
+        // _controller.jumpTo(_controller.position.pixels - 1);
+      } else if (_controller.position.userScrollDirection ==
+          ScrollDirection.reverse) {
+        widget.hide_navbar_function(true);
+      } else {
+        widget.hide_navbar_function(false);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -149,7 +210,11 @@ class _MainBodyState extends State<MainBody> {
               MainMenuLayout(
                 image_list: image_list,
                 title_list: title_list,
-              )
+              ),
+              ShopItemLayout(
+                  scroll_controller: _controller,
+                  hide_navbar_function: widget.hide_navbar_function,
+                  data: data),
             ],
           ),
         ));
@@ -395,7 +460,11 @@ class MainMenuItem extends StatelessWidget {
 }
 
 class MainBottomAppBar extends StatefulWidget {
-  MainBottomAppBar({Key? key}) : super(key: key);
+  MainBottomAppBar({Key? key, this.isNavBarHidden}) : super(key: key);
+
+  var is_scroll_reverse = false;
+  var item_clicked_index = 2;
+  var isNavBarHidden;
 
   @override
   State<MainBottomAppBar> createState() => _MainBottomAppBarState();
@@ -412,52 +481,54 @@ class _MainBottomAppBarState extends State<MainBottomAppBar> {
 
   final title_list = ["카테고리", "이벤트", "홈", "뉴 시즌", "마이"];
 
-  var item_clicked_index = 2;
-
   set_index_function(index) {
     setState(() {
-      item_clicked_index = index;
+      widget.item_clicked_index = index;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return BottomAppBar(
-      child: Row(
-        children: [
-          MainBottomAppBarItem(
-              icon: icon_list[0],
-              title: title_list[0],
-              index: 0,
-              item_clicked_index: item_clicked_index,
-              set_index_function: set_index_function),
-          MainBottomAppBarItem(
-              icon: icon_list[1],
-              title: title_list[1],
-              index: 1,
-              item_clicked_index: item_clicked_index,
-              set_index_function: set_index_function),
-          MainBottomAppBarItem(
-              icon: icon_list[2],
-              title: title_list[2],
-              index: 2,
-              item_clicked_index: item_clicked_index,
-              set_index_function: set_index_function),
-          MainBottomAppBarItem(
-              icon: icon_list[3],
-              title: title_list[3],
-              index: 3,
-              item_clicked_index: item_clicked_index,
-              set_index_function: set_index_function),
-          MainBottomAppBarItem(
-              icon: icon_list[4],
-              title: title_list[4],
-              index: 4,
-              item_clicked_index: item_clicked_index,
-              set_index_function: set_index_function),
-        ],
-      ),
-    );
+    return AnimatedContainer(
+        duration: Duration(milliseconds: 300),
+        height: widget.isNavBarHidden ? 0 : 70,
+        child: SingleChildScrollView(
+            child: BottomAppBar(
+          child: Row(
+            children: [
+              MainBottomAppBarItem(
+                  icon: icon_list[0],
+                  title: title_list[0],
+                  index: 0,
+                  item_clicked_index: widget.item_clicked_index,
+                  set_index_function: set_index_function),
+              MainBottomAppBarItem(
+                  icon: icon_list[1],
+                  title: title_list[1],
+                  index: 1,
+                  item_clicked_index: widget.item_clicked_index,
+                  set_index_function: set_index_function),
+              MainBottomAppBarItem(
+                  icon: icon_list[2],
+                  title: title_list[2],
+                  index: 2,
+                  item_clicked_index: widget.item_clicked_index,
+                  set_index_function: set_index_function),
+              MainBottomAppBarItem(
+                  icon: icon_list[3],
+                  title: title_list[3],
+                  index: 3,
+                  item_clicked_index: widget.item_clicked_index,
+                  set_index_function: set_index_function),
+              MainBottomAppBarItem(
+                  icon: icon_list[4],
+                  title: title_list[4],
+                  index: 4,
+                  item_clicked_index: widget.item_clicked_index,
+                  set_index_function: set_index_function),
+            ],
+          ),
+        )));
   }
 }
 
@@ -511,42 +582,69 @@ class MainBottomAppBarItem extends StatelessWidget {
   }
 }
 
-class DialogUI extends StatelessWidget {
-  DialogUI({Key? key, this.state, this.addOne}) : super(key: key);
+class ShopItemLayout extends StatefulWidget {
+  ShopItemLayout(
+      {Key? key, this.scroll_controller, this.hide_navbar_function, this.data})
+      : super(key: key);
 
-  var state;
-  final addOne;
-  var inputData = TextEditingController();
-  var inputData2 = "";
+  var data;
+  var isScrollReverse = false;
+  var scroll_controller;
+  var hide_navbar_function;
+
+  @override
+  State<ShopItemLayout> createState() => _ShopItemLayoutState();
+}
+
+class _ShopItemLayoutState extends State<ShopItemLayout> {
+  @override
+  Widget build(BuildContext context) {
+    if (widget.data.isNotEmpty) {
+      return GridView.builder(
+        shrinkWrap: true,
+        itemCount: widget.data.length, //item 개수
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, //1 개의 행에 보여줄 item 개수
+          childAspectRatio: 0.75, //item 의 가로 1, 세로 2 의 비율
+        ),
+        itemBuilder: (c, i) {
+          return ShopItem(image_url: widget.data[i]['image']);
+        },
+      );
+    } else {
+      return Text("로딩중");
+    }
+  }
+}
+
+class ShopItem extends StatelessWidget {
+  const ShopItem({Key? key, this.image_url}) : super(key: key);
+
+  final image_url;
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: SizedBox(
-        width: 300,
-        height: 300,
+    return Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            width: 1,
+            color: Colors.black,
+          ),
+        ),
+        padding: EdgeInsets.all(1),
         child: Column(
           children: [
-            TextField(
-              controller: inputData,
-              // onChanged: (text) {
-              //   inputData2 = text;
-              // },
+            Image.network(
+              image_url,
+              fit: BoxFit.cover,
             ),
-            Text(state.toString()),
-            TextButton(
-                onPressed: () {
-                  addOne();
-                },
-                child: Text("확인")),
-            TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text("취소"))
+            Padding(
+              padding: EdgeInsets.only(top: 10, left: 10),
+              child: Row(
+                children: [Icon(Icons.shop), Text("상품 목록")],
+              ),
+            )
           ],
-        ),
-      ),
-    );
+        ));
   }
 }
