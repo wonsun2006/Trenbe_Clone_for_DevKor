@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
@@ -15,6 +14,8 @@ void main() {
 class TrenbeApp extends StatefulWidget {
   TrenbeApp({Key? key}) : super(key: key);
   var isNavBarHidden;
+  var data;
+  final controller = ScrollController();
 
   @override
   State<TrenbeApp> createState() => _TrenbeAppState();
@@ -43,11 +44,55 @@ class _TrenbeAppState extends State<TrenbeApp> {
     });
   }
 
+  getData() async {
+    var result = await http
+        .get(Uri.parse('https://codingapple1.github.io/app/data.json'));
+    // if (result.statusCode == 200) {
+    // } else {}
+    var result2 = jsonDecode(result.body);
+    setState(() {
+      widget.data = result2;
+    });
+  }
+
+  getAdditionalData() async {
+    var result = await http
+        .get(Uri.parse('https://codingapple1.github.io/app/more1.json'));
+    // if (result.statusCode == 200) {
+    // } else {}
+    var result2 = jsonDecode(result.body);
+    setState(() {
+      widget.data = [...widget.data, result2];
+    });
+  }
+
+  scrollToTop() {
+    setState(() {
+      widget.controller.jumpTo(0);
+    });
+  }
+
   @override
   void initState() {
+    // TODO: implement initState
     super.initState();
     getPermission();
     widget.isNavBarHidden = false;
+    getData();
+
+    widget.controller.addListener(() {
+      if (widget.controller.position.pixels ==
+          widget.controller.position.maxScrollExtent) {
+        getAdditionalData();
+
+        // widget.controller.jumpTo(widget.controller.position.pixels - 1);
+      } else if (widget.controller.position.userScrollDirection ==
+          ScrollDirection.reverse) {
+        setIsNavBarHidden(true);
+      } else {
+        setIsNavBarHidden(false);
+      }
+    });
   }
 
   @override
@@ -55,7 +100,10 @@ class _TrenbeAppState extends State<TrenbeApp> {
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(50),
-        child: MainAppBar(),
+        child: MainAppBar(
+          getAdditionalData: getAdditionalData,
+          trenbeContext: context,
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.white,
@@ -65,11 +113,15 @@ class _TrenbeAppState extends State<TrenbeApp> {
           size: 50,
         ),
         onPressed: () {
-          _mainBodyState.currentState?.scrollToTop();
+          scrollToTop();
         },
       ),
       body: MainBody(
-          key: _mainBodyState, hide_navbar_function: setIsNavBarHidden),
+        key: _mainBodyState,
+        hide_navbar_function: setIsNavBarHidden,
+        controller: widget.controller,
+        data: widget.data,
+      ),
       bottomNavigationBar: MainBottomAppBar(
           key: _mainNavBarState, isNavBarHidden: widget.isNavBarHidden),
     );
@@ -77,9 +129,12 @@ class _TrenbeAppState extends State<TrenbeApp> {
 }
 
 class MainAppBar extends StatelessWidget {
-  MainAppBar({Key? key}) : super(key: key);
+  MainAppBar({Key? key, this.getAdditionalData, this.trenbeContext})
+      : super(key: key);
 
   var getPermission;
+  final getAdditionalData;
+  final trenbeContext;
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +147,17 @@ class MainAppBar extends StatelessWidget {
             scale: 1.5,
           )),
       actions: [
+        IconButton(
+            splashRadius: 20,
+            onPressed: () {
+              Navigator.push(trenbeContext,
+                  MaterialPageRoute(builder: (c) => UploadPage()));
+              getAdditionalData();
+            },
+            icon: Icon(
+              Icons.add_shopping_cart_outlined,
+              color: Colors.black,
+            )),
         IconButton(
             splashRadius: 20,
             onPressed: () {},
@@ -112,16 +178,17 @@ class MainAppBar extends StatelessWidget {
 }
 
 class MainBody extends StatefulWidget {
-  MainBody({Key? key, this.hide_navbar_function}) : super(key: key);
+  MainBody({Key? key, this.hide_navbar_function, this.data, this.controller})
+      : super(key: key);
   var hide_navbar_function;
+  var data;
+  final controller;
 
   @override
   State<MainBody> createState() => _MainBodyState();
 }
 
 class _MainBodyState extends State<MainBody> {
-  var data;
-  final _controller = ScrollController();
   final image_list = [
     "assets/menu_items/menu_item_1.png",
     "assets/menu_items/menu_item_2.png",
@@ -147,59 +214,10 @@ class _MainBodyState extends State<MainBody> {
     "리퍼브"
   ];
 
-  scrollToTop() {
-    setState(() {
-      _controller.jumpTo(0);
-    });
-  }
-
-  getData() async {
-    var result = await http
-        .get(Uri.parse('https://codingapple1.github.io/app/data.json'));
-    // if (result.statusCode == 200) {
-    // } else {}
-    var result2 = jsonDecode(result.body);
-    setState(() {
-      data = result2;
-    });
-  }
-
-  getAdditionalData() async {
-    sleep(const Duration(seconds: 1));
-    var result = await http
-        .get(Uri.parse('https://codingapple1.github.io/app/more1.json'));
-    // if (result.statusCode == 200) {
-    // } else {}
-    var result2 = jsonDecode(result.body);
-    setState(() {
-      data = [...data, result2];
-    });
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    getData();
-
-    _controller.addListener(() {
-      if (_controller.position.pixels == _controller.position.maxScrollExtent) {
-        getAdditionalData();
-
-        // _controller.jumpTo(_controller.position.pixels - 1);
-      } else if (_controller.position.userScrollDirection ==
-          ScrollDirection.reverse) {
-        widget.hide_navbar_function(true);
-      } else {
-        widget.hide_navbar_function(false);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-        controller: _controller,
+        controller: widget.controller,
         child: Container(
           width: double.infinity,
           child: Column(
@@ -212,9 +230,9 @@ class _MainBodyState extends State<MainBody> {
                 title_list: title_list,
               ),
               ShopItemLayout(
-                  scroll_controller: _controller,
+                  scroll_controller: widget.controller,
                   hide_navbar_function: widget.hide_navbar_function,
-                  data: data),
+                  data: widget.data),
             ],
           ),
         ));
@@ -462,7 +480,6 @@ class MainMenuItem extends StatelessWidget {
 class MainBottomAppBar extends StatefulWidget {
   MainBottomAppBar({Key? key, this.isNavBarHidden}) : super(key: key);
 
-  var is_scroll_reverse = false;
   var item_clicked_index = 2;
   var isNavBarHidden;
 
@@ -644,6 +661,27 @@ class ShopItem extends StatelessWidget {
                 children: [Icon(Icons.shop), Text("상품 목록")],
               ),
             )
+          ],
+        ));
+  }
+}
+
+class UploadPage extends StatelessWidget {
+  const UploadPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text("이미지 업로드 화면"),
+            IconButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                icon: Icon(Icons.close_outlined))
           ],
         ));
   }
